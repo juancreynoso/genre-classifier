@@ -14,7 +14,7 @@ import os
 FOLKLORE_PATH = "Data/folklore_test/"
 
 print("="*60)
-print("EXPERIMENTO B: FOLKLORE CON ENTRENAMIENTO")
+print("EXPERIMENTO B: PREDICCION DE FOLKLORE CON ENTRENAMIENTO")
 print("="*60)
 
 
@@ -25,7 +25,6 @@ print(f"\nGTZAN cargado: {len(df_gtzan)} muestras")
 
 # FUNCION DE EXTRACCION
 def extract_features(file_path):
-    """Extrae features de audio"""
     try:
         y, sr = librosa.load(file_path, duration=30, sr=22050)
         
@@ -118,19 +117,7 @@ print(f"  Train: {len(df_folklore_train)} canciones")
 print(f"  Test:  1 cancion")
 print(f"  Cancion de test: {df_folklore_test['filename'].values[0]}")
 
-'''
-n_train = min(37, len(df_folklore) - 1)
-df_folklore_train = df_folklore.iloc[:n_train].copy()
-df_folklore_test = df_folklore.iloc[n_train:n_train+1].copy()
-
-print(f"\nSplit de folklore:")
-print(f"  Train: {len(df_folklore_train)} canciones")
-print(f"  Test:  {len(df_folklore_test)} canciones")
-print(f"  Cancion de test: {df_folklore_test['filename'].values[0]}")
-'''
-
 # COMBINAR GTZAN + FOLKLORE
-
 df_combined = pd.concat([df_gtzan, df_folklore_train], ignore_index=True)
 print(f"\nDataset combinado: {len(df_combined)} muestras")
 print(f"Generos: {df_combined['genre'].nunique()}")
@@ -139,9 +126,7 @@ print(df_combined['genre'].value_counts().sort_index())
 
 
 # ENTRENAR CON 11 GENEROS
-print("\n" + "="*60)
-print("ENTRENAMIENTO CON FOLKLORE INCLUIDO")
-print("="*60)
+print("\nENTRENAMIENTO CON FOLKLORE INCLUIDO")
 
 X = df_combined.drop(['filename', 'genre'], axis=1).values
 y = df_combined['genre'].values
@@ -160,7 +145,7 @@ X_train_scaled = scaler.fit_transform(X_train)
 X_test_gtzan_scaled = scaler.transform(X_test_gtzan)
 
 print(f"\nTrain: {len(X_train)} muestras")
-print(f"Test (GTZAN): {len(X_test_gtzan)} muestras")
+print(f"Test: {len(X_test_gtzan)} muestras")
 
 print("\nEntrenando SVM con 10 generos y Folklore...")
 model = SVC(kernel='rbf', random_state=42, probability=True)
@@ -173,9 +158,7 @@ print(f"Accuracy en el entrenamiento: {accuracy:.2%}")
 
 
 # PRUEBA CON CANCION
-print("\n" + "="*60)
-print("TEST CON CANCION DE FOLKLORE NO ENTRENADA")
-print("="*60)
+print("\nPREDICCION CON CANCION DE FOLKLORE NO ENTRENADA")
 
 X_folklore_test = df_folklore_test.drop(['filename', 'genre'], axis=1).values
 X_folklore_test_scaled = scaler.transform(X_folklore_test)
@@ -192,14 +175,8 @@ print(f"Confianza: {confidence:.2%}")
 
 print("\nProbabilidades por genero:")
 for i, genre in enumerate(label_encoder.classes_):
-    bar = "█" * int(probabilities[i] * 50)
-    print(f"  {genre:12s}: {probabilities[i]:5.1%} {bar}")
+    print(f"  {genre:12s}: {probabilities[i]:5.1%}")
 
-
-# RESULTADOS
-print("\nEXPERIMENTO B: Con folklore en entrenamiento (13 muestras)")
-print(f"  Resultado: Clasificado como '{predicted_genre}'")
-print(f"  Confianza: {confidence:.1%}")
 
 # GRAFICOS
 # Cargar resultados del experimento A para comparar
@@ -246,16 +223,9 @@ plt.tight_layout()
 plt.savefig('results/folklore_comparison.png', dpi=300, bbox_inches='tight')
 plt.close()
 
-print("\nGrafico guardado: results/folklore_comparison.png")
-
 
 # GUARDAR MODELO
 pickle.dump(model, open('models/svm_with_folklore.pkl', 'wb'))
 pickle.dump(scaler, open('models/scaler_with_folklore.pkl', 'wb'))
 pickle.dump(label_encoder, open('models/label_encoder_with_folklore.pkl', 'wb'))
-
-print("\nModelos guardados:")
-print("  - models/svm_with_folklore.pkl")
-print("  - models/scaler_with_folklore.pkl")
-print("  - models/label_encoder_with_folklore.pkl")
 

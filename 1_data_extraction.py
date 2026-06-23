@@ -20,19 +20,6 @@ print(f"\nGeneros encontrados: {genres}")
 print(f"Total: {len(genres)} generos\n")
 
 def extract_features(file_path):
-    """
-    Extrae features de audio usando librosa
-    
-    Features extraidas:
-    - MFCCs (13 coeficientes): Capturan el timbre/textura del sonido
-    - Chroma (12 notas): Informacion tonal/armonica
-    - Spectral Centroid: "Brillo" del sonido
-    - Spectral Rolloff: Punto donde cae el 85% de la energia
-    - Spectral Bandwidth: "Ancho" del espectro
-    - Zero Crossing Rate: Cruces por cero (util para percusion)
-    - Tempo: BPM estimado
-    - RMS Energy: Energia general de la señal
-    """
     try:
         # Cargar audio (primeros 30 segundos)
         y, sr = librosa.load(file_path, duration=30, sr=22050)
@@ -94,12 +81,9 @@ def extract_features(file_path):
         print(f"Error en {file_path}: {e}")
         return None
 
-# ============================================
-# PROCESAR TODOS LOS ARCHIVOS
-# ============================================
 
-print("Extrayendo features de todos los archivos...")
-print("Tiempo estimado: 2-3 minutos\n")
+# PROCESAR TODO EL DATASET
+print("Extrayendo features...")
 
 all_features = []
 
@@ -122,9 +106,7 @@ cols = [c for c in df.columns if c not in ['filename', 'genre']]
 cols = cols + ['filename', 'genre']
 df = df[cols]
 
-print(f"\n{'='*60}")
-print("EXTRACCION COMPLETA")
-print("="*60)
+print("EXTRACCION COMPLETADA")
 print(f"Total de muestras: {len(df)}")
 print(f"Total de features: {len(df.columns) - 2}")
 
@@ -133,9 +115,6 @@ df.to_csv(OUTPUT_FILE, index=False)
 print(f"\nArchivo guardado: {OUTPUT_FILE}")
 
 # ANALISIS EXPLORATORIO
-print("\n" + "="*60)
-print("ANALISIS EXPLORATORIO")
-print("="*60)
 
 print("\nDistribucion de generos:")
 print(df['genre'].value_counts().sort_index())
@@ -143,7 +122,3 @@ print(df['genre'].value_counts().sort_index())
 print("\nEstadisticas de Tempo por genero:")
 tempo_stats = df.groupby('genre')['tempo'].agg(['mean', 'std', 'min', 'max'])
 print(tempo_stats.round(2))
-
-print("\n" + "="*60)
-print("Listo para entrenar modelo")
-print("="*60)

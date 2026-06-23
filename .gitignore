@@ -1,0 +1,15 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# LaTeX (archivos auxiliares de compilación)
+docs/*.aux
+docs/*.log
+docs/*.out
+docs/*.toc

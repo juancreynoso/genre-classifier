@@ -10,23 +10,21 @@ import pickle
 FOLKLORE_PATH = "Data/folklore_test/"
 
 print("="*60)
-print("EXPERIMENTO A: FOLKLORE SIN ENTRENAMIENTO")
+print("EXPERIMENTO A: PREDICCION DE FOLKLORE SIN ENTRENAMIENTO")
 print("="*60)
 
 # CARGAR MODELO
-print("\nCargando modelo entrenado...")
+print("\nCargando modelo SVM entrenado...")
 
 model = pickle.load(open('models/svm_model.pkl', 'rb'))
 scaler = pickle.load(open('models/scaler.pkl', 'rb'))
 label_encoder = pickle.load(open('models/label_encoder.pkl', 'rb'))
 
-print("Modelo cargado: SVM")
 print(f"Generos conocidos: {list(label_encoder.classes_)}")
 
 
 # FUNCION DE EXTRACCION
 def extract_features(file_path):
-    """Extrae features de audio"""
     try:
         y, sr = librosa.load(file_path, duration=30, sr=22050)
         
@@ -85,14 +83,13 @@ if len(folklore_files) == 0:
     exit()
 
 print(f"\nEncontradas {len(folklore_files)} canciones de folklore")
-print("\nProcesando archivos...")
+print("\nProcesando archivos de folklore...")
 
 folklore_features = []
 folklore_names = []
 
 for i, file in enumerate(folklore_files, 1):
     name = os.path.basename(file)
-    print(f"  [{i}/{len(folklore_files)}] {name}")
     
     features = extract_features(file)
     if features is not None:
@@ -112,9 +109,7 @@ probabilities = model.predict_proba(X_folklore_scaled)
 
 
 # RESULTADOS
-print("\n" + "="*60)
 print("PREDICCIONES DEL MODELO")
-print("="*60)
 
 results_df = pd.DataFrame({
     'Cancion': folklore_names,
@@ -126,25 +121,19 @@ print("\n", results_df.to_string(index=False))
 
 
 # ESTADISTICAS
-print("\n" + "="*60)
-print("DISTRIBUCION DE PREDICCIONES")
-print("="*60)
+print("\nESTADISTICAS")
 
 pred_counts = pd.Series(
     label_encoder.inverse_transform(predictions)
 ).value_counts()
 
-print("\nEl modelo clasifico folklore argentino como:")
+print("\nEl modelo clasifico folklore argentino esta confianza:")
 for genre, count in pred_counts.items():
     percentage = (count / len(predictions)) * 100
-    bar = "█" * int(percentage / 5)
-    print(f"  {genre:12s}: {count:2d} canciones ({percentage:5.1f}%) {bar}")
+    print(f"  {genre:12s}: {count:2d} canciones ({percentage:5.1f}%)")
 
 
 # CONFIANZA
-print("\n" + "="*60)
-print("ANALISIS DE CONFIANZA")
-print("="*60)
 
 max_probs = np.max(probabilities, axis=1)
 avg_confidence = np.mean(max_probs)
@@ -195,29 +184,9 @@ plt.tight_layout()
 plt.savefig('results/folklore_without_training.png', dpi=300, bbox_inches='tight')
 plt.close()
 
-print("\nGrafico guardado: results/folklore_without_training.png")
-
 
 # CONCLUSIONES
-print("\n" + "="*60)
-print("CONCLUSIONES - EXPERIMENTO A")
-print("="*60)
 
 most_common = pred_counts.index[0]
 most_common_pct = (pred_counts.iloc[0] / len(predictions)) * 100
 
-print(f"\nResultados:")
-print(f"  - Genero mas predicho: {most_common} ({most_common_pct:.1f}%)")
-print(f"  - Confianza promedio: {avg_confidence:.1%}")
-print(f"  - Total de canciones: {len(folklore_files)}")
-
-print(f"\nInterpretacion:")
-if most_common in ['country', 'blues']:
-    print(f"  El modelo clasifico folklore como {most_common}")
-    print("  Esto tiene sentido por:")
-    print("    - Instrumentos acusticos similares")
-    print("    - Estructuras ritmicas comparables")
-    print("    - Espectro frecuencial parecido")
-else:
-    print(f"  El modelo clasifico folklore como {most_common}")
-    print("  Resultado interesante para analizar")

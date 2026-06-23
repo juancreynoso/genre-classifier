@@ -27,10 +27,6 @@ help:
 
 # Ejecutar pipeline completo
 run-all: extract train analyze experiment
-	@echo ""
-	@echo "=========================================="
-	@echo "  Pipeline completo ejecutado"
-	@echo "=========================================="
 
 
 # Paso 1: Extraer features
