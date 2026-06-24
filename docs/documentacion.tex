@@ -172,8 +172,9 @@ final).
 \texttt{3\_folklore\_analysis.py} & Experimento A & Predice folklore con el SVM sin reentrenar \\
 \texttt{4\_folklore\_training\_and\_testing.py} & Experimento B & Reentrena con folklore incluido y prueba con 1 canción no vista \\
 \texttt{4b\_folklore\_crossvalidation.py} & Experimento B (v2) & Evalúa el folklore con \emph{cross-validation} 5-fold (versión correcta) \\
-\texttt{5\_neuronal\_network.py} & Comparación & Red neuronal sobre las mismas features \\
+\texttt{5\_neuronal\_network.py} & Comparación & Red neuronal sobre GTZAN (10 géneros) \\
 \texttt{6\_cnn\_training.py} & Opcional & CNN sobre mel-espectrogramas (descartado) \\
+\texttt{7\_model\_comparison.py} & Comparación justa & SVM vs Red Neuronal sobre el mismo split (11 clases) \\
 \bottomrule
 \end{longtable}
 
@@ -623,7 +624,7 @@ model = keras.Sequential([
   reserva 20\% para vigilar el sobreajuste durante el entrenamiento.
 \end{itemize}
 
-\subsection{SVM vs Red Neuronal}
+\subsection{Comparación cualitativa}
 
 \begin{center}
 \begin{tabular}{p{4cm} p{5cm} p{5cm}}
@@ -634,17 +635,54 @@ Datos ideales & Pocos/medianos & Muchos \\
 45 features & Muy cómodo & Funciona, puede sobreajustar \\
 Interpretabilidad & Media (vectores de soporte) & Baja (caja negra) \\
 Ajuste de hiperparámetros & Pocos ($C$, $\gamma$) & Muchos (capas, dropout, lr) \\
-Rendimiento aquí & \textasciitilde 68\% & Comparable / algo variable \\
+Determinismo & Determinista (semilla fija) & Ruidoso (init aleatoria) \\
 \bottomrule
 \end{tabular}
 \end{center}
 
+\subsection{Comparación justa (mismo dataset y mismo split)}
+
+\begin{defenbox}{Cuidado con las comparaciones tramposas}
+El script original de la red reportaba \textbf{77\% vs 68\% del SVM}, pero esa
+comparación era \textbf{inválida}: la red se medía solo sobre GTZAN (10 clases,
+sin folklore) y con un split \textbf{sin estratificar}, mientras que el SVM usaba
+un split estratificado sobre datos distintos. Peras con manzanas.
+\end{defenbox}
+
+El script \texttt{7\_model\_comparison.py} hace la comparación \textbf{correcta}:
+entrena \emph{ambos} modelos sobre el \textbf{mismo} dataset ampliado (GTZAN +
+folklore, 11 clases), con el \textbf{mismo} split estratificado 80/20 y el mismo
+\texttt{StandardScaler}.
+
+\begin{center}
+\begin{tabular}{l c c}
+\toprule
+\textbf{Métrica} & \textbf{SVM} & \textbf{Red Neuronal} \\
+\midrule
+Accuracy global & \textbf{68.2\,\%} & 65--68\,\% (varía) \\
+Folklore --- precision & 75.0\,\% & $\sim$53\,\% \\
+Folklore --- recall & 64.3\,\% (9/14) & 64.3\,\% (9/14) \\
+Folklore --- f1-score & 69.2\,\% & 58--72\,\% (varía) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{../results/model_comparison.png}
+\caption{Matrices de confusión de ambos modelos sobre el mismo conjunto de test
+de 11 clases. Rendimiento muy parecido; el folklore se reconoce de forma similar
+en los dos.}
+\end{figure}
+
 \begin{ideabox}{Conclusión de la comparación}
-Con un dataset \textbf{chico} (1000 canciones) y features ya ``destiladas'' por
-\texttt{librosa}, el SVM es muy competitivo y a veces supera al MLP, que necesita
-más datos para brillar. Esto refuerza una idea de fondo: \textbf{una buena
-representación de los datos (las features) suele importar más que la complejidad
-del modelo}.
+Enfrentados de forma justa, \textbf{SVM y red neuronal quedan parejos}
+($\sim$66--68\%): la red \textbf{no} es mejor. Es más, el SVM gana levemente y de
+forma \emph{estable}, mientras que la red varía entre corridas por su
+inicialización aleatoria. La razón de fondo: con un dataset \textbf{chico} (1000
+canciones) y features ya ``destiladas'' por \texttt{librosa}, un modelo más
+complejo no tiene de dónde sacar ventaja. \textbf{Una buena representación de los
+datos (las features) suele importar más que la complejidad del modelo.}
 \end{ideabox}
 
 % ================= 7. CNN =================
