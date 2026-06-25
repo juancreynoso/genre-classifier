@@ -1,9 +1,9 @@
-import librosa
-import numpy as np
 import pandas as pd
 import os
 from glob import glob
 from tqdm import tqdm
+
+from features import extract_features
 
 
 # EXTRACCION DE FEATURES CON LIBROSA
@@ -18,68 +18,6 @@ print("="*60)
 genres = [g for g in os.listdir(DATA_PATH) if os.path.isdir(os.path.join(DATA_PATH, g))]
 print(f"\nGeneros encontrados: {genres}")
 print(f"Total: {len(genres)} generos\n")
-
-def extract_features(file_path):
-    try:
-        # Cargar audio (primeros 30 segundos)
-        y, sr = librosa.load(file_path, duration=30, sr=22050)
-        
-        # MFCCs
-        mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13)
-        mfcc_mean = np.mean(mfcc, axis=1)
-        mfcc_std = np.std(mfcc, axis=1)
-        
-        # Chroma
-        chroma = librosa.feature.chroma_stft(y=y, sr=sr)
-        chroma_mean = np.mean(chroma, axis=1)
-        
-        # Spectral Centroid
-        spectral_centroid = librosa.feature.spectral_centroid(y=y, sr=sr)
-        spectral_centroid_mean = np.mean(spectral_centroid)
-        spectral_centroid_std = np.std(spectral_centroid)
-        
-        # Spectral Rolloff
-        spectral_rolloff = librosa.feature.spectral_rolloff(y=y, sr=sr)
-        spectral_rolloff_mean = np.mean(spectral_rolloff)
-        
-        # Spectral Bandwidth
-        spectral_bandwidth = librosa.feature.spectral_bandwidth(y=y, sr=sr)
-        spectral_bandwidth_mean = np.mean(spectral_bandwidth)
-        
-        # Zero Crossing Rate
-        zcr = librosa.feature.zero_crossing_rate(y)
-        zcr_mean = np.mean(zcr)
-        
-        # Tempo
-        tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
-        if isinstance(tempo, np.ndarray):
-            tempo = tempo.item()
-        else:
-            tempo = float(tempo)
-        
-        # RMS Energy
-        rms = librosa.feature.rms(y=y)
-        rms_mean = np.mean(rms)
-        
-        # Concatenar todas las features
-        features = {
-            **{f'mfcc_mean_{i}': mfcc_mean[i] for i in range(13)},
-            **{f'mfcc_std_{i}': mfcc_std[i] for i in range(13)},
-            **{f'chroma_{i}': chroma_mean[i] for i in range(12)},
-            'spectral_centroid_mean': spectral_centroid_mean,
-            'spectral_centroid_std': spectral_centroid_std,
-            'spectral_rolloff_mean': spectral_rolloff_mean,
-            'spectral_bandwidth_mean': spectral_bandwidth_mean,
-            'zcr_mean': zcr_mean,
-            'tempo': tempo,
-            'rms_mean': rms_mean
-        }
-        
-        return features
-    
-    except Exception as e:
-        print(f"Error en {file_path}: {e}")
-        return None
 
 
 # PROCESAR TODO EL DATASET

@@ -12,13 +12,13 @@ from tensorflow import keras
 from tensorflow.keras import layers
 import tensorflow as tf
 
+from features import load_folklore_features
+
 # Reproducibilidad
 np.random.seed(42)
 tf.random.set_seed(42)
 
 os.makedirs('results', exist_ok=True)
-
-FOLKLORE_CACHE = "folklore_features.csv"
 
 print("="*60)
 print("COMPARACION SVM vs RED NEURONAL (con folklore, 11 clases)")
@@ -29,13 +29,7 @@ print("="*60)
 # CARGAR DATASET AMPLIADO: GTZAN + FOLKLORE
 # ============================================
 df_gtzan = pd.read_csv('my_features.csv')
-
-if not os.path.exists(FOLKLORE_CACHE):
-    print(f"\nError: falta {FOLKLORE_CACHE}.")
-    print("Ejecuta primero 4b_folklore_crossvalidation.py para generarlo.")
-    exit()
-
-df_folklore = pd.read_csv(FOLKLORE_CACHE)
+df_folklore = load_folklore_features()
 
 df = pd.concat([df_gtzan, df_folklore], ignore_index=True)
 print(f"\nGTZAN:    {len(df_gtzan)} muestras")

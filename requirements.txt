@@ -16,9 +16,8 @@ seaborn>=0.12.0
 # Progress bar
 tqdm>=4.65.0
 
-# Optional: Deep Learning (for CNN)
-# tensorflow>=2.13.0
-# keras>=2.13.0
+# Deep Learning (red neuronal: scripts 5 y 7; CNN opcional: script 6)
+tensorflow>=2.13.0
 
 # Optional: Jupyter notebooks
 # jupyter>=1.0.0

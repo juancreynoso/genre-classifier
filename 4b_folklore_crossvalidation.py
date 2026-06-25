@@ -7,103 +7,24 @@ from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.metrics import accuracy_score
 from sklearn.svm import SVC
 import pickle
-import librosa
-from glob import glob
-import os
 
-FOLKLORE_PATH = "Data/folklore_test/"
-FOLKLORE_CACHE = "folklore_features.csv"
+from features import load_folklore_features, feature_columns
+
 N_SPLITS = 5  # k-fold
 
 print("="*60)
 print("EXPERIMENTO B (v2): FOLKLORE CON CROSS-VALIDATION")
 print("="*60)
 
+
+# ============================================
+# CARGAR DATOS
+# ============================================
 df_gtzan = pd.read_csv('my_features.csv')
 print(f"\nGTZAN cargado: {len(df_gtzan)} muestras")
 
-def extract_features(file_path):
-    try:
-        y, sr = librosa.load(file_path, duration=30, sr=22050)
-
-        mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13)
-        mfcc_mean = np.mean(mfcc, axis=1)
-        mfcc_std = np.std(mfcc, axis=1)
-
-        chroma = librosa.feature.chroma_stft(y=y, sr=sr)
-        chroma_mean = np.mean(chroma, axis=1)
-
-        spectral_centroid = librosa.feature.spectral_centroid(y=y, sr=sr)
-        spectral_centroid_mean = np.mean(spectral_centroid)
-        spectral_centroid_std = np.std(spectral_centroid)
-
-        spectral_rolloff = librosa.feature.spectral_rolloff(y=y, sr=sr)
-        spectral_rolloff_mean = np.mean(spectral_rolloff)
-
-        spectral_bandwidth = librosa.feature.spectral_bandwidth(y=y, sr=sr)
-        spectral_bandwidth_mean = np.mean(spectral_bandwidth)
-
-        zcr = librosa.feature.zero_crossing_rate(y)
-        zcr_mean = np.mean(zcr)
-
-        tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
-        if isinstance(tempo, np.ndarray):
-            tempo = tempo.item()
-        else:
-            tempo = float(tempo)
-
-        rms = librosa.feature.rms(y=y)
-        rms_mean = np.mean(rms)
-
-        features = {
-            **{f'mfcc_mean_{i}': mfcc_mean[i] for i in range(13)},
-            **{f'mfcc_std_{i}': mfcc_std[i] for i in range(13)},
-            **{f'chroma_{i}': chroma_mean[i] for i in range(12)},
-            'spectral_centroid_mean': spectral_centroid_mean,
-            'spectral_centroid_std': spectral_centroid_std,
-            'spectral_rolloff_mean': spectral_rolloff_mean,
-            'spectral_bandwidth_mean': spectral_bandwidth_mean,
-            'zcr_mean': zcr_mean,
-            'tempo': tempo,
-            'rms_mean': rms_mean
-        }
-        return features
-    except Exception as e:
-        print(f"Error en {file_path}: {e}")
-        return None
-
-
-folklore_files = sorted(glob(os.path.join(FOLKLORE_PATH, "*.wav")))
-folklore_files += sorted(glob(os.path.join(FOLKLORE_PATH, "*.mp3")))
-
-if len(folklore_files) == 0:
-    print(f"\nError: No se encontraron archivos en {FOLKLORE_PATH}")
-    exit()
-
-use_cache = os.path.exists(FOLKLORE_CACHE)
-if use_cache:
-    df_folklore = pd.read_csv(FOLKLORE_CACHE)
-    # Si cambio la cantidad de canciones, re-extraer
-    if len(df_folklore) != len(folklore_files):
-        print("\nLa cantidad de canciones cambio -> re-extrayendo features...")
-        use_cache = False
-
-if use_cache:
-    print(f"\nFeatures de folklore cargadas desde cache: {len(df_folklore)} muestras")
-else:
-    print(f"\nProcesando {len(folklore_files)} canciones de folklore...")
-    folklore_data = []
-    for i, file in enumerate(folklore_files, 1):
-        print(f"  [{i}/{len(folklore_files)}] {os.path.basename(file)}")
-        features = extract_features(file)
-        if features is not None:
-            features['filename'] = os.path.basename(file)
-            features['genre'] = 'folklore'
-            folklore_data.append(features)
-    df_folklore = pd.DataFrame(folklore_data)
-    df_folklore.to_csv(FOLKLORE_CACHE, index=False)
-    print(f"Features guardadas en: {FOLKLORE_CACHE}")
-
+# Folklore desde cache (se extrae una sola vez; ver features.py)
+df_folklore = load_folklore_features()
 print(f"Folklore listo: {len(df_folklore)} muestras")
 
 if len(df_folklore) < N_SPLITS:
@@ -120,7 +41,7 @@ if len(df_folklore) < N_SPLITS:
 # Asi cada cancion es evaluada exactamente una vez (out-of-fold) y
 # obtenemos una metrica estable, no dependiente de una sola corrida.
 
-feature_cols = [c for c in df_gtzan.columns if c not in ['filename', 'genre']]
+feature_cols = feature_columns(df_gtzan)
 
 X_folklore = df_folklore[feature_cols].values
 folklore_names = df_folklore['filename'].values

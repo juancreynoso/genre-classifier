@@ -1,40 +1,46 @@
-# 🎵 Clasificador de Géneros Musicales
+# Clasificador de Géneros Musicales
 
 Proyecto de **Inteligencia Artificial** que clasifica canciones automáticamente usando machine learning y análisis acústico.
 
-## 📋 Descripción
+## Descripción
 
 Este proyecto implementa un clasificador de géneros musicales que:
 - Extrae características acústicas de archivos de audio usando `librosa`
-- Entrena modelos de ML (SVM) para clasificar en 10 géneros
+- Entrena dos modelos (SVM y Red Neuronal) para clasificar en 10 géneros
 - Experimenta con folklore argentino como género no visto
 - Valida la capacidad de generalización del modelo
 
 ### Experimentos principales
 
 **Experimento A:** ¿Qué pasa cuando el modelo ve un género que nunca entrenó?
-- Resultado: Clasifica folklore como country (71%)
-- Conclusión: Detecta similitudes acústicas superficiales
+- Resultado: clasifica la mayoría del folklore como country (~69%)
+- Conclusión: detecta similitudes acústicas superficiales (guitarra acústica)
 
 **Experimento B:** ¿Puede aprender un nuevo género con pocas muestras?
-- Resultado: Con 13 muestras logra 57% accuracy (cross-validation)
-- Conclusión: Las features funcionan, pero necesita más datos
+- Resultado: con 70 muestras logra **65.7% ± 9.5%** de recall (cross-validation 5-fold)
+- Conclusión: las features funcionan; el problema del Exp. A era falta de ejemplos
+
+**Comparación de modelos:** ¿SVM o Red Neuronal?
+- En la misma tarea (11 clases, mismo split) quedan **parejos** (~66–68%)
+- Conclusión: con un dataset chico, la representación importa más que el modelo
 
 ---
 
-## 🎯 Resultados
+## Resultados
 
-| Modelo | Dataset | Accuracy |
+| Modelo | Dataset | Métrica |
 |--------|---------|----------|
-| SVM | GTZAN (10 géneros) | 68% |
-| SVM | Folklore sin entrenar | 0% (clasificado como country) |
-| SVM | Folklore con 13 muestras | 57% |
+| SVM | GTZAN (10 géneros) | 68% accuracy |
+| Red Neuronal | GTZAN + folklore (11 clases) | ~67% accuracy |
+| SVM | GTZAN + folklore (11 clases) | 68% accuracy |
+| SVM | Folklore sin entrenar (Exp A) | mayoría → country |
+| SVM | Folklore con 70 muestras (Exp B, CV) | 65.7% ± 9.5% recall |
 
-**Baseline aleatorio:** 10% (1 de 10 géneros)
+**Baseline aleatorio:** 10% (10 géneros) / ~9% (11 géneros)
 
 ---
 
-## 🚀 Instalación
+## Instalación
 
 ### Prerrequisitos
 
@@ -95,7 +101,7 @@ Data/
 
 ---
 
-## 📊 Uso
+## Uso
 
 ### Opción 1: Pipeline completo con Makefile
 
@@ -107,29 +113,41 @@ make help
 make run-all
 
 # O paso a paso:
-make extract      # 1. Extraer features
-make train        # 2. Entrenar SVM
-make analyze      # 3. Analizar folklore sin entrenar
-make experiment-cv # 4. Cross-validation con folklore
+make extract      # 1.  Extraer features de GTZAN
+make train        # 2.  Entrenar SVM
+make analyze      # 3.  Folklore sin entrenar (Exp A)
+make experiment   # 4.  Folklore como clase, 1 canción (Exp B)
+make crossval     # 4b. Folklore con cross-validation (Exp B v2)
+make neural       # 5.  Red neuronal sobre GTZAN
+make compare      # 7.  SVM vs Red Neuronal (11 clases)
 ```
 
 ### Opción 2: Scripts individuales
 
 ```bash
-# 1. Extraer features del dataset GTZAN
+# 1.  Extraer features del dataset GTZAN
 python 1_data_extraction.py
 
-# 2. Entrenar modelo SVM
+# 2.  Entrenar modelo SVM
 python 2_model_training.py
 
-# 3. Experimento A: Folklore sin entrenar
+# 3.  Experimento A: Folklore sin entrenar
 python 3_folklore_analysis.py
 
-# 4. Experimento B: Cross-validation con folklore
+# 4.  Experimento B: folklore como clase (test de 1 canción)
+python 4_folklore_training_and_testing.py
+
+# 4b. Experimento B: cross-validation (recomendado)
 python 4b_folklore_crossvalidation.py
 
-# (Opcional) 5. Entrenar CNN
-python 5_cnn_training.py
+# 5.  Red neuronal sobre GTZAN
+python 5_neuronal_network.py
+
+# 7.  Comparación SVM vs Red Neuronal (11 clases)
+python 7_model_comparison.py
+
+# (Opcional / descartado) CNN sobre espectrogramas
+python 6_cnn_training.py
 ```
 
 ### Limpieza
@@ -144,34 +162,39 @@ make clean-all
 
 ---
 
-## 📁 Estructura del Proyecto
+## Estructura del Proyecto
 
 ```
 music-genre-classifier/
 ├── Data/
 │   ├── genres_original/      # Dataset GTZAN
-│   └── folklore_test/         # Canciones de folklore (opcional)
-├── results/                   # Gráficos generados
+│   └── folklore_test/        # Canciones de folklore
+├── results/                  # Gráficos generados
 │   ├── confusion_matrix.png
 │   ├── folklore_without_training.png
-│   └── folklore_crossvalidation.png
-├── models/                    # Modelos entrenados
-│   ├── svm_model.pkl
-│   ├── scaler.pkl
-│   └── label_encoder.pkl
-├── 1_data_extraction.py                # Extracción de features
+│   ├── folklore_crossvalidation.png
+│   └── model_comparison.png
+├── models/                   # Modelos entrenados (SVM x2 + scaler + encoder)
+├── docs/                     # Guía de estudio (LaTeX + PDF)
+├── features.py                         # Funciones compartidas de extracción
+├── 1_data_extraction.py                # Extracción de features (GTZAN)
 ├── 2_model_training.py                 # Entrenamiento SVM
 ├── 3_folklore_analysis.py              # Experimento A
-├── 4_folklore_training_and_testing_.py # Experimento B
-├── 5_cnn_training.py                   # CNN (opcional)
+├── 4_folklore_training_and_testing.py  # Experimento B (1 canción)
+├── 4b_folklore_crossvalidation.py      # Experimento B (cross-validation)
+├── 5_neuronal_network.py               # Red neuronal sobre GTZAN
+├── 6_cnn_training.py                   # CNN (descartado, referencia)
+├── 7_model_comparison.py               # SVM vs Red Neuronal (11 clases)
+├── my_features.csv                     # Features de GTZAN (generado)
+├── folklore_features.csv               # Features de folklore (cache)
 ├── Makefile                            # Automatización
 ├── requirements.txt                    # Dependencias
-└── README.md                
+└── README.md
 ```
 
 ---
 
-## 🔬 Metodología
+## Metodología
 
 ### 1. Extracción de Features
 
@@ -205,7 +228,7 @@ Cada canción (30 segundos) se convierte en un vector de 45 números:
 
 ---
 
-## 📈 Resultados Detallados
+## Resultados Detallados
 
 ### Confusiones más comunes
 
@@ -232,9 +255,9 @@ Cada canción (30 segundos) se convierte en un vector de 45 números:
 
 ---
 
-## 🎓 Conclusiones
+## Conclusiones
 
-### ✅ Aprendizajes
+### Aprendizajes
 
 1. **Representación importa:** 
    - Features acústicas capturan propiedades musicales relevantes
@@ -249,24 +272,16 @@ Cada canción (30 segundos) se convierte en un vector de 45 números:
    - Folklore → country por instrumentación acústica
    - No captura contexto cultural
 
-### ⚠️ Limitaciones
+### Limitaciones
 
 - Dataset pequeño (100 canciones/género)
 - Solo features acústicas (no considera letras, metadata)
 - Folklore muy heterogéneo (chacarera ≠ zamba ≠ chamamé)
 - GTZAN tiene canciones mal etiquetadas
 
-### 🔮 Trabajo Futuro
-
-- [ ] Aumentar dataset de folklore (50-100 muestras)
-- [ ] Separar folklore en sub-géneros
-- [ ] Probar CNN con mel-spectrograms
-- [ ] Agregar features temporales (estructura de la canción)
-- [ ] Data augmentation para aumentar muestras
-
 ---
 
-## 🛠️ Tecnologías Utilizadas
+## Tecnologías Utilizadas
 
 - **Python 3.8+**
 - **Librosa:** Análisis de audio y extracción de features
@@ -277,7 +292,7 @@ Cada canción (30 segundos) se convierte en un vector de 45 números:
 
 ---
 
-## 📚 Referencias
+## Referencias
 
 ### Dataset
 - [GTZAN Music Genre Dataset](https://www.kaggle.com/datasets/andradaolteanu/gtzan-dataset-music-genre-classification)
@@ -292,20 +307,21 @@ Cada canción (30 segundos) se convierte en un vector de 45 números:
 
 ---
 
-## 👥 Autores
+## Autores
 
-- **Tu Nombre** - [GitHub](https://github.com/tu-usuario)
-- **Marcelo** - Colaborador
+- **Juan Cruz Reynoso**
+- **Marcelo Juarez**
+- **Jhonatan Calle Galeano**
 
 ---
 
-## 📄 Licencia
+## Licencia
 
 Este proyecto es de código abierto y está disponible bajo la licencia MIT.
 
 ---
 
-## 🙋 FAQ
+## FAQ
 
 ### ¿Por qué solo 68% de accuracy?
 
@@ -343,7 +359,7 @@ blues, classical, country, disco, hiphop, jazz, metal, pop, reggae, rock
 
 ---
 
-## 🤝 Contribuciones
+## Contribuciones
 
 Las contribuciones son bienvenidas. Por favor:
 
@@ -355,10 +371,6 @@ Las contribuciones son bienvenidas. Por favor:
 
 ---
 
-## 📞 Contacto
+## Contacto
 
 ¿Preguntas? Abre un [issue](https://github.com/tu-usuario/music-genre-classifier/issues) en GitHub.
-
----
-
-**⭐ Si te gustó el proyecto, dale una estrella en GitHub!**

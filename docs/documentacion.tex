@@ -2,12 +2,13 @@
 
 % ---------- Paquetes ----------
 \usepackage{fontspec}
-\usepackage[spanish,es-noindentfirst]{babel}
+\usepackage[spanish,es-noindentfirst,es-noshorthands]{babel}
 \usepackage{geometry}
 \geometry{margin=2.3cm}
 \usepackage{xcolor}
 \usepackage{graphicx}
 \usepackage{amsmath}
+\usepackage{amssymb}
 \usepackage{booktabs}
 \usepackage{array}
 \usepackage{enumitem}
@@ -15,6 +16,8 @@
 \usepackage{titlesec}
 \usepackage[framemethod=default]{mdframed}
 \usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning}
 \usepackage{hyperref}
 \usepackage{longtable}
 
@@ -163,10 +166,12 @@ final).
 \end{tabular}
 \end{center}
 
-\begin{longtable}{p{3.3cm} p{4.2cm} p{6cm}}
+\begingroup\footnotesize\renewcommand{\_}{\textunderscore\allowbreak}
+\begin{longtable}{p{3.6cm} p{3.3cm} p{6cm}}
 \toprule
 \textbf{Script} & \textbf{Etapa} & \textbf{Qué hace} \\
 \midrule
+\texttt{features.py} & Módulo común & Funciones compartidas: \texttt{extract\_features} y la carga del folklore con cache \\
 \texttt{1\_data\_extraction.py} & Extracción & Recorre GTZAN, extrae 45 features por canción $\rightarrow$ \texttt{my\_features.csv} \\
 \texttt{2\_model\_training.py} & Entrenamiento & Entrena SVM (RBF), guarda modelo + scaler + label encoder \\
 \texttt{3\_folklore\_analysis.py} & Experimento A & Predice folklore con el SVM sin reentrenar \\
@@ -177,6 +182,137 @@ final).
 \texttt{7\_model\_comparison.py} & Comparación justa & SVM vs Red Neuronal sobre el mismo split (11 clases) \\
 \bottomrule
 \end{longtable}
+\endgroup
+
+% ================= ESTADO DEL PROYECTO =================
+\section{Estado del proyecto: modelos, datos y archivos}
+
+Antes de entrar en los detalles, este es el ``mapa'' del proyecto: qué se genera,
+qué modelos quedan guardados y qué archivos hacen falta para cada cosa.
+
+\subsection{El flujo de datos}
+
+\begin{center}
+\begin{tikzpicture}[
+  box/.style={rectangle, draw=azulprof, fill=azulclaro, rounded corners,
+    align=center, minimum height=0.9cm, text width=2.5cm, font=\scriptsize},
+  io/.style={rectangle, draw=naranja, fill=white, rounded corners,
+    align=center, minimum height=0.9cm, text width=2.0cm, font=\scriptsize},
+  >=Stealth, node distance=0.6cm and 0.9cm
+]
+\node[io] (gtzan) {Audio GTZAN};
+\node[io, below=of gtzan] (folk) {Audio folklore};
+\node[box, right=of gtzan] (csv1) {\texttt{my\_features}\\\texttt{.csv}};
+\node[box, right=of folk]  (csv2) {\texttt{folklore\_}\\\texttt{features.csv}};
+\node[box, right=of csv1, yshift=-0.75cm] (model) {Modelos\\SVM / Red};
+\node[box, right=of model] (exp) {Experimentos\\y predicciones};
+\draw[->] (gtzan) -- node[above,font=\tiny]{script 1} (csv1);
+\draw[->] (folk)  -- node[above,font=\tiny]{features.py} (csv2);
+\draw[->] (csv1) -- (model);
+\draw[->] (csv2) -- (model);
+\draw[->] (model) -- node[above,font=\tiny]{2, 4b, 5, 7} (exp);
+\end{tikzpicture}
+\end{center}
+
+Hay \textbf{dos} fuentes de audio que se extraen \textbf{por separado}, y este es
+un punto que suele confundir:
+\begin{itemize}[leftmargin=0.7cm]
+  \item \textbf{GTZAN}: lo extrae \texttt{1\_data\_extraction.py} una sola vez
+  $\rightarrow$ \texttt{my\_features.csv} (999 canciones, 45 features c/u).
+  \item \textbf{Folklore}: el script 1 \textbf{no} lo procesa. Lo cargan los
+  scripts de folklore (3, 4, 4b y 7) a través de \texttt{features.py}, que extrae
+  desde la carpeta de folklore \textbf{una sola vez} y guarda
+  \texttt{folklore\_\allowbreak features.csv} (70 canciones). En las corridas siguientes se
+  lee del cache.
+\end{itemize}
+
+Una vez que las features están en los CSVs, el entrenamiento y los experimentos
+(scripts 2, 5, 7 y la parte de modelado de 4b) ya \textbf{no} tocan el audio.
+
+\begin{ideabox}{Extracción centralizada (refactor)}
+La función \texttt{extract\_features} estaba \textbf{copiada} en varios scripts, y
+los scripts 3 y 4 re-extraían el folklore en cada corrida. Se centralizó todo en
+el módulo \texttt{features.py}: una única \texttt{extract\_\allowbreak features} y una función
+\texttt{load\_\allowbreak folklore\_\allowbreak features} con cache. Ahora todos los scripts importan de
+ahí, no hay código duplicado y el audio del folklore se procesa una sola vez.
+\end{ideabox}
+
+\subsection{Los modelos guardados (y por qué son 3 archivos cada uno)}
+
+Algo que confunde al principio: \textbf{cada ``modelo'' son en realidad 3
+archivos} que viajan juntos. No alcanza con el clasificador solo; para predecir
+el género de una canción se necesitan los tres:
+
+\begin{center}
+\begin{tabular}{p{3.2cm} p{3cm} p{7.5cm}}
+\toprule
+\textbf{Archivo} & \textbf{Qué es} & \textbf{Para qué sirve} \\
+\midrule
+\texttt{svm\_*.pkl} & Clasificador SVM & Hace la predicción del género \\
+\texttt{scaler\_*.pkl} & \texttt{StandardScaler} & Normaliza las features de una canción nueva \emph{igual} que en el entrenamiento. Sin esto, los números entran en otra escala y el modelo falla \\
+\texttt{label\_\allowbreak encoder\_*.pkl} & \texttt{LabelEncoder} & Traduce entre el número interno del modelo y el nombre del género ($0 \leftrightarrow$ blues, $4 \leftrightarrow$ folklore, \ldots) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+En la carpeta \texttt{models/} hay \textbf{dos modelos}, ambos SVM:
+
+\begin{center}
+\begin{tabular}{p{4.5cm} c p{7cm}}
+\toprule
+\textbf{Modelo (trío)} & \textbf{Clases} & \textbf{Qué hace} \\
+\midrule
+\texttt{svm\_model} (+ scaler, encoder) & 10 (GTZAN) & Clasificador base. Es el del \textbf{Experimento A}: predice folklore con géneros que ya conoce ($\rightarrow$ \emph{country}) \\
+\texttt{svm\_with\_folklore} (+ \ldots) & 11 (GTZAN + folk) & El que sí conoce ``folklore'' como clase. Modelo final del \textbf{Experimento B} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{defenbox}{La red neuronal y la CNN no se guardan en disco}
+Los únicos modelos persistidos son los \textbf{dos SVM}. La \textbf{red neuronal}
+se entrena en memoria dentro de los scripts 5 y 7 (se usa y se descarta en cada
+corrida), y la \textbf{CNN} fue descartada y removida del repositorio (queda solo
+\texttt{6\_cnn\_training.py} como referencia). Esto es a propósito: el foco del
+proyecto es el \emph{análisis}, no servir predicciones en producción.
+\end{defenbox}
+
+\subsection{¿Hace falta el audio una vez que tengo el CSV?}
+
+\textbf{Para reproducir los experimentos y entrenar: no.} Los scripts 2, 4, 4b, 5
+y 7 \textbf{solo leen los CSVs}, nunca abren un \texttt{.wav}. Con los dos CSVs
+alcanza para reentrenar todo y reproducir cada resultado.
+
+\textbf{El audio sí se necesita en dos casos:}
+\begin{enumerate}[leftmargin=0.8cm]
+  \item \textbf{Re-extraer features}: si cambiás qué features usás, o
+  agregás/quitás canciones, hay que volver a correr la extracción sobre los
+  \texttt{.wav}.
+  \item \textbf{Clasificar una canción nueva}: el modelo no ``come'' audio, come
+  el vector de 45 números. Para una canción que no está en el CSV, primero hay
+  que extraerle las features desde su \texttt{.wav}.
+\end{enumerate}
+
+En resumen, el audio pasa a ser \textbf{materia prima}: para lo ya hecho no se
+necesita; para extender el dataset o probar canciones nuevas, sí.
+
+\subsection{Resumen del estado actual}
+
+\begin{center}
+\begin{tabular}{p{6.5cm} c p{5cm}}
+\toprule
+\textbf{Componente} & \textbf{Estado} & \textbf{Detalle} \\
+\midrule
+Extracción de features (script 1) & \checkmark & 45 features con librosa \\
+SVM base (10 géneros) & \checkmark & $\sim$68\% accuracy \\
+SVM con folklore (11 clases) & \checkmark & guardado en \texttt{models/} \\
+Experimento A (folklore sin entrenar) & \checkmark & cae en \emph{country} \\
+Experimento B + cross-validation & \checkmark & recall 65.7\% $\pm$ 9.5\% \\
+Red neuronal + comparación justa & \checkmark & empata con SVM ($\sim$66--68\%) \\
+Documentación (este PDF) & \checkmark & guía de estudio completa \\
+CNN & descartada & solo queda el script de referencia \\
+\bottomrule
+\end{tabular}
+\end{center}
 
 % ================= 2. SONIDO Y LIBROSA =================
 \section{Cómo funciona \texttt{librosa} en profundidad}

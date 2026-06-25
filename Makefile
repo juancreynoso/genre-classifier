@@ -1,4 +1,4 @@
-.PHONY: help clean clean-all extract train analyze experiment run-all
+.PHONY: help clean clean-all clean-csv extract train analyze experiment crossval neural compare run-all show-files show-results
 
 # Variables
 PYTHON = python3
@@ -8,16 +8,19 @@ help:
 	@echo "  Clasificador de Generos Musicales"
 	@echo "=========================================="
 	@echo ""
-	@echo "Comandos disponibles:"
-	@echo "  make extract      - Extraer features del dataset GTZAN"
-	@echo "  make train        - Entrenar modelo SVM"
-	@echo "  make analyze      - Analizar folklore sin entrenamiento (Exp A)"
-	@echo "  make experiment   - Entrenar con folklore incluido (Exp B)"
-	@echo "  make run-all      - Ejecutar pipeline completo"
+	@echo "Pipeline:"
+	@echo "  make extract      - 1. Extraer features de GTZAN"
+	@echo "  make train        - 2. Entrenar SVM (10 generos)"
+	@echo "  make analyze      - 3. Folklore sin entrenar (Exp A)"
+	@echo "  make experiment   - 4. Folklore como clase, 1 cancion (Exp B)"
+	@echo "  make crossval     - 4b. Folklore con cross-validation (Exp B v2)"
+	@echo "  make neural       - 5. Red neuronal sobre GTZAN"
+	@echo "  make compare      - 7. SVM vs Red Neuronal (11 clases)"
+	@echo "  make run-all      - Pipeline completo (extract..compare)"
 	@echo ""
 	@echo "Limpieza:"
-	@echo "  make clean        - Borrar archivos generados (modelos y resultados)"
-	@echo "  make clean-csv    - Borrar solo CSV de features"
+	@echo "  make clean        - Borrar modelos y resultados"
+	@echo "  make clean-csv    - Borrar CSV de features (GTZAN + folklore)"
 	@echo "  make clean-all    - Borrar TODO (CSV + modelos + resultados)"
 	@echo ""
 	@echo "Informacion:"
@@ -25,8 +28,8 @@ help:
 	@echo "  make show-results - Mostrar graficos generados"
 	@echo ""
 
-# Ejecutar pipeline completo
-run-all: extract train analyze experiment
+# Ejecutar pipeline completo (usa la version con cross-validation y la comparacion)
+run-all: extract train analyze crossval compare
 
 
 # Paso 1: Extraer features
@@ -44,10 +47,25 @@ analyze:
 	@echo "Analizando folklore sin entrenamiento..."
 	$(PYTHON) 3_folklore_analysis.py
 
-# Paso 4: Entrenar con folklore (Experimento B)
+# Paso 4: Entrenar con folklore, 1 cancion de test (Experimento B)
 experiment:
-	@echo "Entrenando con folklore incluido..."
+	@echo "Entrenando con folklore incluido (1 cancion de test)..."
 	$(PYTHON) 4_folklore_training_and_testing.py
+
+# Paso 4b: Folklore con cross-validation (Experimento B v2, recomendado)
+crossval:
+	@echo "Evaluando folklore con cross-validation..."
+	$(PYTHON) 4b_folklore_crossvalidation.py
+
+# Paso 5: Red neuronal sobre GTZAN
+neural:
+	@echo "Entrenando red neuronal sobre GTZAN..."
+	$(PYTHON) 5_neuronal_network.py
+
+# Paso 7: Comparacion SVM vs Red Neuronal (11 clases)
+compare:
+	@echo "Comparando SVM vs Red Neuronal..."
+	$(PYTHON) 7_model_comparison.py
 
 # Limpiar archivos generados (mantiene CSV)
 clean:
@@ -56,18 +74,18 @@ clean:
 	rm -rf results/
 	@echo "Limpieza completa"
 
-# Limpiar solo CSV
+# Limpiar solo CSV (GTZAN + cache de folklore)
 clean-csv:
 	@echo "Borrando CSV de features..."
-	rm -f my_features.csv
-	@echo "CSV eliminado"
+	rm -f my_features.csv folklore_features.csv
+	@echo "CSV eliminados"
 
 # Limpiar TODO
 clean-all:
 	@echo "Borrando TODOS los archivos generados..."
 	rm -rf models/
 	rm -rf results/
-	rm -f my_features.csv
+	rm -f my_features.csv folklore_features.csv
 	rm -f *.pkl
 	@echo "Limpieza total completa"
 

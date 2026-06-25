@@ -14,9 +14,10 @@ docs/*.log
 docs/*.out
 docs/*.toc
 
-# CNN descartada: no versionar sus artefactos pesados/generados
-# (el script 6_cnn_training.py se conserva como documentación)
-models/cnn_model.keras
-models/cnn_label_encoder.pkl
+# Modelos entrenados: son regenerables (scripts 1-2 y 4b). No se versionan
+# para que los git pull sean livianos.
+models/
+
+# CNN descartada: tampoco versionar sus imágenes de resultados
 results/cnn_confusion_matrix.png
 results/cnn_training_history.png

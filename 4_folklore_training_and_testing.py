@@ -7,11 +7,8 @@ from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.metrics import accuracy_score
 from sklearn.svm import SVC
 import pickle
-import librosa
-from glob import glob
-import os
 
-FOLKLORE_PATH = "Data/folklore_test/"
+from features import load_folklore_features
 
 print("="*60)
 print("EXPERIMENTO B: PREDICCION DE FOLKLORE CON ENTRENAMIENTO")
@@ -23,80 +20,8 @@ df_gtzan = pd.read_csv('my_features.csv')
 print(f"\nGTZAN cargado: {len(df_gtzan)} muestras")
 
 
-# FUNCION DE EXTRACCION
-def extract_features(file_path):
-    try:
-        y, sr = librosa.load(file_path, duration=30, sr=22050)
-        
-        mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13)
-        mfcc_mean = np.mean(mfcc, axis=1)
-        mfcc_std = np.std(mfcc, axis=1)
-        
-        chroma = librosa.feature.chroma_stft(y=y, sr=sr)
-        chroma_mean = np.mean(chroma, axis=1)
-        
-        spectral_centroid = librosa.feature.spectral_centroid(y=y, sr=sr)
-        spectral_centroid_mean = np.mean(spectral_centroid)
-        spectral_centroid_std = np.std(spectral_centroid)
-        
-        spectral_rolloff = librosa.feature.spectral_rolloff(y=y, sr=sr)
-        spectral_rolloff_mean = np.mean(spectral_rolloff)
-        
-        spectral_bandwidth = librosa.feature.spectral_bandwidth(y=y, sr=sr)
-        spectral_bandwidth_mean = np.mean(spectral_bandwidth)
-        
-        zcr = librosa.feature.zero_crossing_rate(y)
-        zcr_mean = np.mean(zcr)
-        
-        tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
-        if isinstance(tempo, np.ndarray):
-            tempo = tempo.item()
-        else:
-            tempo = float(tempo)
-        
-        rms = librosa.feature.rms(y=y)
-        rms_mean = np.mean(rms)
-        
-        features = {
-            **{f'mfcc_mean_{i}': mfcc_mean[i] for i in range(13)},
-            **{f'mfcc_std_{i}': mfcc_std[i] for i in range(13)},
-            **{f'chroma_{i}': chroma_mean[i] for i in range(12)},
-            'spectral_centroid_mean': spectral_centroid_mean,
-            'spectral_centroid_std': spectral_centroid_std,
-            'spectral_rolloff_mean': spectral_rolloff_mean,
-            'spectral_bandwidth_mean': spectral_bandwidth_mean,
-            'zcr_mean': zcr_mean,
-            'tempo': tempo,
-            'rms_mean': rms_mean
-        }
-        
-        return features
-    except Exception as e:
-        print(f"Error: {e}")
-        return None
-
-
-
-# PROCESAR FOLKLORE
-folklore_files = sorted(glob(os.path.join(FOLKLORE_PATH, "*.wav")))
-folklore_files += sorted(glob(os.path.join(FOLKLORE_PATH, "*.mp3")))
-
-if len(folklore_files) == 0:
-    print(f"\nError: No se encontraron archivos en {FOLKLORE_PATH}")
-    exit()
-
-print(f"\nProcesando {len(folklore_files)} canciones de folklore...")
-
-folklore_data = []
-for i, file in enumerate(folklore_files, 1):
-    print(f"  [{i}/{len(folklore_files)}] {os.path.basename(file)}")
-    features = extract_features(file)
-    if features is not None:
-        features['filename'] = os.path.basename(file)
-        features['genre'] = 'folklore'
-        folklore_data.append(features)
-
-df_folklore = pd.DataFrame(folklore_data)
+# PROCESAR FOLKLORE (features desde cache; se extraen una sola vez)
+df_folklore = load_folklore_features()
 print(f"Folklore procesado: {len(df_folklore)} muestras")
 
 
@@ -228,4 +153,3 @@ plt.close()
 pickle.dump(model, open('models/svm_with_folklore.pkl', 'wb'))
 pickle.dump(scaler, open('models/scaler_with_folklore.pkl', 'wb'))
 pickle.dump(label_encoder, open('models/label_encoder_with_folklore.pkl', 'wb'))
-
