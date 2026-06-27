@@ -77,7 +77,7 @@ clean:
 # Limpiar solo CSV (GTZAN + cache de folklore)
 clean-csv:
 	@echo "Borrando CSV de features..."
-	rm -f my_features.csv folklore_features.csv
+	rm -f my_features.csv my_features_combined.csv folklore_features.csv
 	@echo "CSV eliminados"
 
 # Limpiar TODO
