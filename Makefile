@@ -65,7 +65,7 @@ neural:
 # Paso 7: Comparacion SVM vs Red Neuronal (11 clases)
 compare:
 	@echo "Comparando SVM vs Red Neuronal..."
-	$(PYTHON) 7_model_comparison.py
+	$(PYTHON) 8_model_comparison.py
 
 # Limpiar archivos generados (mantiene CSV)
 clean:
