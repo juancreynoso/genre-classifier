@@ -78,33 +78,16 @@ print(f"  {label_encoder.inverse_transform([predictions[min_idx]])[0]} ({max_pro
 
 
 # VISUALIZACION
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
+fig, ax = plt.subplots(figsize=(10, 6))
 
 # Distribucion
-pred_counts.plot(kind='bar', ax=ax1, color='coral', edgecolor='black')
-ax1.set_title('Predicciones para Folklore Argentino', fontsize=14, fontweight='bold')
-ax1.set_xlabel('Genero Predicho', fontsize=12)
-ax1.set_ylabel('Numero de Canciones', fontsize=12)
-ax1.grid(axis='y', alpha=0.3)
+pred_counts.plot(kind='bar', ax=ax, color='coral', edgecolor='black')
+ax.set_title('Predicciones para Folklore Argentino', fontsize=14, fontweight='bold')
+ax.set_xlabel('Genero Predicho', fontsize=12)
+ax.set_ylabel('Numero de Canciones', fontsize=12)
+ax.grid(axis='y', alpha=0.3)
 for i, v in enumerate(pred_counts.values):
-    ax1.text(i, v + 0.1, str(v), ha='center', fontweight='bold')
-
-# Heatmap
-short_names = [n[:20] + '...' if len(n) > 20 else n for n in folklore_names]
-sns.heatmap(
-    probabilities.T,
-    xticklabels=short_names,
-    yticklabels=label_encoder.classes_,
-    annot=True,
-    fmt='.2f',
-    cmap='YlOrRd',
-    ax=ax2,
-    cbar_kws={'label': 'Probabilidad'}
-)
-ax2.set_title('Probabilidades por Cancion', fontsize=14, fontweight='bold')
-ax2.set_xlabel('Canciones de Folklore', fontsize=12)
-ax2.set_ylabel('Generos GTZAN', fontsize=12)
-plt.setp(ax2.get_xticklabels(), rotation=45, ha='right')
+    ax.text(i, v + 0.1, str(v), ha='center', fontweight='bold')
 
 plt.tight_layout()
 plt.savefig('results/folklore_without_training.png', dpi=300, bbox_inches='tight')
