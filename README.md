@@ -99,6 +99,11 @@ Data/
     └── ...
 ```
 
+> **Nota sobre archivos generados:** los CSV de features (`my_features.csv`, etc.)
+> y los modelos (`models/`) **no se versionan** (están en `.gitignore`) porque son
+> regenerables y hacen pesado el repo. Tras clonar, generálos corriendo el
+> pipeline desde el script 1 (necesita el audio de GTZAN ya descargado).
+
 ---
 
 ## Uso
@@ -216,7 +221,7 @@ Cada canción (30 segundos) se convierte en un vector de 45 números:
 
 - **Train/Test split:** 80/20 estratificado
 - **Normalización:** StandardScaler (media=0, std=1)
-- **Cross-validation:** Leave-One-Out para folklore
+- **Cross-validation:** 5-fold sobre el folklore (cada canción se evalúa una vez sobre un modelo que no la vio)
 
 ---
 

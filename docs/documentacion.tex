@@ -175,11 +175,9 @@ final).
 \texttt{1\_data\_extraction.py} & Extracción & Recorre GTZAN, extrae 45 features por canción $\rightarrow$ \texttt{my\_features.csv} \\
 \texttt{2\_model\_training.py} & Entrenamiento & Entrena SVM (RBF), guarda modelo + scaler + label encoder \\
 \texttt{3\_folklore\_analysis.py} & Experimento A & Predice folklore con el SVM sin reentrenar \\
-\texttt{4\_folklore\_training\_and\_testing.py} & Experimento B & Reentrena con folklore incluido y prueba con 1 canción no vista \\
-\texttt{4b\_folklore\_crossvalidation.py} & Experimento B (v2) & Evalúa el folklore con \emph{cross-validation} 5-fold (versión correcta) \\
-\texttt{5\_neuronal\_network.py} & Comparación & Red neuronal sobre GTZAN (10 géneros) \\
-\texttt{6\_cnn\_training.py} & Opcional & CNN sobre mel-espectrogramas (descartado) \\
-\texttt{7\_model\_comparison.py} & Comparación justa & SVM vs Red Neuronal sobre el mismo split (11 clases) \\
+\texttt{4\_folklore\_training\_and\_testing.py} & Experimento B (demo) & Reentrena con folklore incluido y prueba con 1 canción no vista \\
+\texttt{5\_folklore\_crossvalidation.py} & Experimento B & Evalúa el folklore con \emph{cross-validation} 5-fold (versión correcta) \\
+\texttt{6\_model\_comparison.py} & Comparación justa & SVM vs Red Neuronal sobre el mismo split (11 clases) \\
 \bottomrule
 \end{longtable}
 \endgroup
@@ -210,7 +208,7 @@ qué modelos quedan guardados y qué archivos hacen falta para cada cosa.
 \draw[->] (folk)  -- node[above,font=\tiny]{features.py} (csv2);
 \draw[->] (csv1) -- (model);
 \draw[->] (csv2) -- (model);
-\draw[->] (model) -- node[above,font=\tiny]{2, 4b, 5, 7} (exp);
+\draw[->] (model) -- node[above,font=\tiny]{2, 4, 5, 6} (exp);
 \end{tikzpicture}
 \end{center}
 
@@ -220,14 +218,14 @@ un punto que suele confundir:
   \item \textbf{GTZAN}: lo extrae \texttt{1\_data\_extraction.py} una sola vez
   $\rightarrow$ \texttt{my\_features.csv} (999 canciones, 45 features c/u).
   \item \textbf{Folklore}: el script 1 \textbf{no} lo procesa. Lo cargan los
-  scripts de folklore (3, 4, 4b y 7) a través de \texttt{features.py}, que extrae
+  scripts de folklore (3, 4, 5 y 6) a través de \texttt{features.py}, que extrae
   desde la carpeta de folklore \textbf{una sola vez} y guarda
   \texttt{folklore\_\allowbreak features.csv} (70 canciones). En las corridas siguientes se
   lee del cache.
 \end{itemize}
 
 Una vez que las features están en los CSVs, el entrenamiento y los experimentos
-(scripts 2, 5, 7 y la parte de modelado de 4b) ya \textbf{no} tocan el audio.
+(scripts 2, 4, 5 y 6) ya \textbf{no} tocan el audio.
 
 \begin{ideabox}{Extracción centralizada (refactor)}
 La función \texttt{extract\_features} estaba \textbf{copiada} en varios scripts, y
@@ -268,18 +266,17 @@ En la carpeta \texttt{models/} hay \textbf{dos modelos}, ambos SVM:
 \end{tabular}
 \end{center}
 
-\begin{defenbox}{La red neuronal y la CNN no se guardan en disco}
+\begin{defenbox}{La red neuronal no se guarda en disco}
 Los únicos modelos persistidos son los \textbf{dos SVM}. La \textbf{red neuronal}
-se entrena en memoria dentro de los scripts 5 y 7 (se usa y se descarta en cada
-corrida), y la \textbf{CNN} fue descartada y removida del repositorio (queda solo
-\texttt{6\_cnn\_training.py} como referencia). Esto es a propósito: el foco del
-proyecto es el \emph{análisis}, no servir predicciones en producción.
+se entrena en memoria dentro del script de comparación (se usa y se descarta en
+cada corrida). Esto es a propósito: el foco del proyecto es el \emph{análisis},
+no servir predicciones en producción.
 \end{defenbox}
 
 \subsection{¿Hace falta el audio una vez que tengo el CSV?}
 
-\textbf{Para reproducir los experimentos y entrenar: no.} Los scripts 2, 4, 4b, 5
-y 7 \textbf{solo leen los CSVs}, nunca abren un \texttt{.wav}. Con los dos CSVs
+\textbf{Para reproducir los experimentos y entrenar: no.} Los scripts 2, 4, 5
+y 6 \textbf{solo leen los CSVs}, nunca abren un \texttt{.wav}. Con los CSVs
 alcanza para reentrenar todo y reproducir cada resultado.
 
 \textbf{El audio sí se necesita en dos casos:}
@@ -647,7 +644,7 @@ con \texttt{random\_state=None}, cambia en cada corrida). Es una
 
 \subsubsection{La versión correcta: cross-validation 5-fold}
 
-El script \texttt{4b\_folklore\_crossvalidation.py} arregla esto. La idea de la
+El script \texttt{5\_folklore\_crossvalidation.py} arregla esto. La idea de la
 \textbf{validación cruzada}: partir las 70 canciones de folklore en 5 grupos
 (\emph{folds}). En cada ronda, 4 grupos van a entrenamiento (junto con GTZAN) y
 1 grupo se reserva para test; se rota hasta que \textbf{cada canción fue
@@ -720,7 +717,9 @@ de trabajo futuro.
 \section{Modelo 2: Red Neuronal (MLP)}
 
 Para cumplir con el requisito de usar \textbf{al menos dos modelos}, se entrena
-un Perceptrón Multicapa (MLP) con Keras sobre las \emph{mismas} 45 features.
+un Perceptrón Multicapa (MLP) con Keras sobre las \emph{mismas} 45 features. Vive
+dentro del script de comparación (\texttt{6\_model\_comparison.py}), entrenado
+sobre el dataset ampliado de 11 clases (GTZAN + folklore).
 
 \begin{lstlisting}
 model = keras.Sequential([
@@ -729,7 +728,7 @@ model = keras.Sequential([
     layers.Dense(64, activation='relu'),
     layers.Dropout(0.3),
     layers.Dense(32, activation='relu'),
-    layers.Dense(10, activation='softmax')   # 10 generos
+    layers.Dense(11, activation='softmax')   # 11 generos (GTZAN + folklore)
 ])
 \end{lstlisting}
 
@@ -744,7 +743,7 @@ model = keras.Sequential([
   \item[Dropout (0.3)] En cada paso de entrenamiento ``apaga'' al azar el 30\%
   de las neuronas. Esto \textbf{evita el sobreajuste}: la red no puede depender
   de una sola neurona y aprende representaciones más robustas.
-  \item[Capa de salida (10, softmax)] \textbf{Softmax} convierte las 10 salidas
+  \item[Capa de salida (11, softmax)] \textbf{Softmax} convierte las 11 salidas
   en una distribución de probabilidad que suma 1: ``75\% rock, 15\% metal...''.
 \end{description}
 
@@ -779,13 +778,15 @@ Determinismo & Determinista (semilla fija) & Ruidoso (init aleatoria) \\
 \subsection{Comparación justa (mismo dataset y mismo split)}
 
 \begin{defenbox}{Cuidado con las comparaciones tramposas}
-El script original de la red reportaba \textbf{77\% vs 68\% del SVM}, pero esa
-comparación era \textbf{inválida}: la red se medía solo sobre GTZAN (10 clases,
-sin folklore) y con un split \textbf{sin estratificar}, mientras que el SVM usaba
-un split estratificado sobre datos distintos. Peras con manzanas.
+Una primera medición ``suelta'' de la red daba \textbf{77\% vs 68\% del SVM},
+pero esa comparación era \textbf{inválida}: la red se medía solo sobre GTZAN (10
+clases, sin folklore) y con un split \textbf{sin estratificar}, mientras que el
+SVM usaba un split estratificado sobre datos distintos. Peras con manzanas. Por
+eso ambos modelos se entrenan y evalúan en \textbf{un único script} sobre el
+mismo split.
 \end{defenbox}
 
-El script \texttt{7\_model\_comparison.py} hace la comparación \textbf{correcta}:
+El script \texttt{6\_model\_comparison.py} hace la comparación \textbf{correcta}:
 entrena \emph{ambos} modelos sobre el \textbf{mismo} dataset ampliado (GTZAN +
 folklore, 11 clases), con el \textbf{mismo} split estratificado 80/20 y el mismo
 \texttt{StandardScaler}.
@@ -874,7 +875,7 @@ trabajo futuro}, no como resultado principal.
   neuronal se incluye para comparar y necesita más datos.
 
   \item[¿Es robusto el Experimento B?] El primer script no (test de 1 canción).
-  Por eso hicimos la versión correcta (\texttt{4b}) con \textbf{cross-validation
+  Por eso hicimos la versión correcta (script \texttt{5}) con \textbf{cross-validation
   5-fold} sobre las 70 canciones: recall de folklore \textbf{65.7\% $\pm$ 9.5\%},
   una métrica estable y promediada, no una corrida con suerte.
 

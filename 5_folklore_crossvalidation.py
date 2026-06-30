@@ -49,7 +49,7 @@ fold_accs = []
 dummy_y = np.zeros(len(df_folklore))  # StratifiedKFold pide etiquetas; folklore es 1 sola clase
 
 print("\n" + "="*60)
-print(f"VALIDACION CRUZADA ({N_SPLITS}-FOLD)")
+print(f"CROSS VALIDATION ({N_SPLITS}-FOLD)")
 print("="*60)
 
 for fold, (train_idx, test_idx) in enumerate(kf.split(X_folklore, dummy_y), 1):

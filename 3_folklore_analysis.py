@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pickle
 
-from features import feature_columns
+from features import load_folklore_features, feature_columns
 
 print("="*60)
 print("EXPERIMENTO A: PREDICCION DE FOLKLORE SIN ENTRENAMIENTO")
@@ -24,7 +24,7 @@ print(f"Generos conocidos: {list(label_encoder.classes_)}")
 # PROCESAR FOLKLORE
 # Las features se cargan del cache (folklore_features.csv); si no existe se
 # extraen una sola vez. Ya no se re-extrae el audio en cada corrida.
-df_folklore = pd.read_csv('folklore_features.csv')
+df_folklore = load_folklore_features()
 folklore_names = list(df_folklore['filename'].values)
 X_folklore = df_folklore[feature_columns(df_folklore)].values
 X_folklore_scaled = scaler.transform(X_folklore)
