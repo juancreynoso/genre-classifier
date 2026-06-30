@@ -1,33 +1,31 @@
-# 5_neural_network.py
+"""
+Entrenamiento de Red Neuronal utilizando GTZAN + FOLKLORE
+"""
+
 import pandas as pd
 import numpy as np
-import pickle
-import os
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report, accuracy_score
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
+import pickle
+
 from tensorflow import keras
 from tensorflow.keras import layers
 import tensorflow as tf
 
-np.random.seed(42)
-tf.random.set_seed(42)
-
-os.makedirs('models', exist_ok=True)
-
 print("="*60)
-print("ENTRENAMIENTO RED NEURONAL - GTZAN")
+print("Entrenamiento de RED NEURONAL utilizando GTZAN + FOLKLORE")
 print("="*60)
 
-# CARGAR DATOS
-df = pd.read_csv('my_features.csv')
+# CARGAR DATOS (GTZAN + FOLKLORE)
+df = pd.read_csv('my_features_combined.csv')
 print(f"\nDataset cargado: {df.shape[0]} muestras, {df.shape[1]} columnas")
 
 X = df.drop(['filename', 'genre'], axis=1).values
 y = df['genre'].values
 
-# CARGAR SCALER Y LABEL ENCODER del SVM
-scaler = pickle.load(open('models/scaler.pkl', 'rb'))
-label_encoder = pickle.load(open('models/label_encoder.pkl', 'rb'))
+# CARGAR LABEL ENCODER Y SCALER
+scaler = pickle.load(open('models/scaler_with_folklore.pkl', 'rb'))
+label_encoder = pickle.load(open('models/label_encoder_with_folklore.pkl', 'rb'))
 
 y_encoded = label_encoder.transform(y)
 n_classes = len(label_encoder.classes_)
@@ -76,5 +74,6 @@ print("\nClassification Report:")
 print(classification_report(y_test, y_pred, target_names=label_encoder.classes_, digits=3))
 
 # GUARDAR MODELO
-model.save('models/nn_model.keras')
-print("\nModelo guardado: models/nn_model.keras")
+model.save('models/nn_model_with_folklore.keras')
+print("\nModelo guardado: models/nn_model_with_folklore.keras")
+

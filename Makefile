@@ -62,6 +62,11 @@ neural:
 	@echo "Entrenando red neuronal sobre GTZAN..."
 	$(PYTHON) 5_neuronal_network.py
 
+# Paso 6: Red neuronal sobre GTZAN + FOLK
+neural-b:
+	@echo "Entrenando red neuronal sobre GTZAN + FOLK..."
+	$(PYTHON) 6_nn_with_folk.py
+
 # Paso 7: Comparacion SVM vs Red Neuronal (11 clases)
 compare:
 	@echo "Comparando SVM vs Red Neuronal..."

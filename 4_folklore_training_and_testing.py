@@ -17,7 +17,7 @@ df_combined = pd.read_csv('my_features_combined.csv')
 print(f"\nGTZAN + FOLKLORE cargado: {len(df_combined)} muestras")
 
 # SPLIT DE FOLKLORE
-df_folklore = df_combined[df_combined['genre'] == 'folklore'].sample(frac=1, random_state=None).reset_index(drop=True)
+df_folklore = df_combined[df_combined['genre'] == 'folklore'].sample(frac=1, random_state=42).reset_index(drop=True)
 
 if len(df_folklore) < 2:
     print("\nError: Se necesitan al menos 2 canciones de folklore")
