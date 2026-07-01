@@ -1,4 +1,4 @@
-.PHONY: help clean clean-all clean-csv extract train analyze experiment crossval neural compare run-all show-files show-results
+.PHONY: help clean clean-all clean-csv extract train analyze experiment crossval compare run-all show-files show-results
 
 # Variables
 PYTHON = python3
@@ -13,9 +13,8 @@ help:
 	@echo "  make train        - 2. Entrenar SVM (10 generos)"
 	@echo "  make analyze      - 3. Folklore sin entrenar (Exp A)"
 	@echo "  make experiment   - 4. Folklore como clase, 1 cancion (Exp B)"
-	@echo "  make crossval     - 4b. Folklore con cross-validation (Exp B v2)"
-	@echo "  make neural       - 5. Red neuronal sobre GTZAN"
-	@echo "  make compare      - 7. SVM vs Red Neuronal (11 clases)"
+	@echo "  make crossval     - 5. Folklore con cross-validation (Exp B)"
+	@echo "  make compare      - 6. SVM vs Red Neuronal (11 clases)"
 	@echo "  make run-all      - Pipeline completo (extract..compare)"
 	@echo ""
 	@echo "Limpieza:"
@@ -52,20 +51,15 @@ experiment:
 	@echo "Entrenando con folklore incluido (1 cancion de test)..."
 	$(PYTHON) 4_folklore_training_and_testing.py
 
-# Paso 4b: Folklore con cross-validation (Experimento B v2, recomendado)
+# Paso 5: Folklore con cross-validation (Experimento B, recomendado)
 crossval:
 	@echo "Evaluando folklore con cross-validation..."
-	$(PYTHON) 4b_folklore_crossvalidation.py
+	$(PYTHON) 5_folklore_crossvalidation.py
 
-# Paso 5: Red neuronal sobre GTZAN
-neural:
-	@echo "Entrenando red neuronal sobre GTZAN..."
-	$(PYTHON) 5_neuronal_network.py
-
-# Paso 7: Comparacion SVM vs Red Neuronal (11 clases)
+# Paso 6: Comparacion SVM vs Red Neuronal (11 clases)
 compare:
 	@echo "Comparando SVM vs Red Neuronal..."
-	$(PYTHON) 7_model_comparison.py
+	$(PYTHON) 6_model_comparison.py
 
 # Limpiar archivos generados (mantiene CSV)
 clean:
@@ -77,7 +71,7 @@ clean:
 # Limpiar solo CSV (GTZAN + cache de folklore)
 clean-csv:
 	@echo "Borrando CSV de features..."
-	rm -f my_features.csv folklore_features.csv
+	rm -f my_features.csv my_features_combined.csv folklore_features.csv
 	@echo "CSV eliminados"
 
 # Limpiar TODO

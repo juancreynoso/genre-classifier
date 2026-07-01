@@ -99,6 +99,11 @@ Data/
     └── ...
 ```
 
+> **Nota sobre archivos generados:** los CSV de features (`my_features.csv`, etc.)
+> y los modelos (`models/`) **no se versionan** (están en `.gitignore`) porque son
+> regenerables y hacen pesado el repo. Tras clonar, generálos corriendo el
+> pipeline desde el script 1 (necesita el audio de GTZAN ya descargado).
+
 ---
 
 ## Uso
@@ -113,41 +118,34 @@ make help
 make run-all
 
 # O paso a paso:
-make extract      # 1.  Extraer features de GTZAN
-make train        # 2.  Entrenar SVM
-make analyze      # 3.  Folklore sin entrenar (Exp A)
-make experiment   # 4.  Folklore como clase, 1 canción (Exp B)
-make crossval     # 4b. Folklore con cross-validation (Exp B v2)
-make neural       # 5.  Red neuronal sobre GTZAN
-make compare      # 7.  SVM vs Red Neuronal (11 clases)
+make extract      # 1. Extraer features de GTZAN
+make train        # 2. Entrenar SVM
+make analyze      # 3. Folklore sin entrenar (Exp A)
+make experiment   # 4. Folklore como clase, 1 canción (Exp B)
+make crossval     # 5. Folklore con cross-validation (Exp B)
+make compare      # 6. SVM vs Red Neuronal (11 clases)
 ```
 
 ### Opción 2: Scripts individuales
 
 ```bash
-# 1.  Extraer features del dataset GTZAN
+# 1. Extraer features (GTZAN) y armar el dataset combinado
 python 1_data_extraction.py
 
-# 2.  Entrenar modelo SVM
+# 2. Entrenar modelo SVM sobre GTZAN
 python 2_model_training.py
 
-# 3.  Experimento A: Folklore sin entrenar
+# 3. Experimento A: folklore sin entrenar
 python 3_folklore_analysis.py
 
-# 4.  Experimento B: folklore como clase (test de 1 canción)
+# 4. Experimento B: folklore como clase (test de 1 canción)
 python 4_folklore_training_and_testing.py
 
-# 4b. Experimento B: cross-validation (recomendado)
-python 4b_folklore_crossvalidation.py
+# 5. Experimento B: cross-validation (recomendado)
+python 5_folklore_crossvalidation.py
 
-# 5.  Red neuronal sobre GTZAN
-python 5_neuronal_network.py
-
-# 7.  Comparación SVM vs Red Neuronal (11 clases)
-python 7_model_comparison.py
-
-# (Opcional / descartado) CNN sobre espectrogramas
-python 6_cnn_training.py
+# 6. Comparación SVM vs Red Neuronal (11 clases)
+python 6_model_comparison.py
 ```
 
 ### Limpieza
@@ -177,15 +175,14 @@ music-genre-classifier/
 ├── models/                   # Modelos entrenados (SVM x2 + scaler + encoder)
 ├── docs/                     # Guía de estudio (LaTeX + PDF)
 ├── features.py                         # Funciones compartidas de extracción
-├── 1_data_extraction.py                # Extracción de features (GTZAN)
+├── 1_data_extraction.py                # Extracción de features (GTZAN + combinado)
 ├── 2_model_training.py                 # Entrenamiento SVM
-├── 3_folklore_analysis.py              # Experimento A
-├── 4_folklore_training_and_testing.py  # Experimento B (1 canción)
-├── 4b_folklore_crossvalidation.py      # Experimento B (cross-validation)
-├── 5_neuronal_network.py               # Red neuronal sobre GTZAN
-├── 6_cnn_training.py                   # CNN (descartado, referencia)
-├── 7_model_comparison.py               # SVM vs Red Neuronal (11 clases)
+├── 3_folklore_analysis.py              # Experimento A (folklore sin entrenar)
+├── 4_folklore_training_and_testing.py  # Experimento B (test de 1 canción)
+├── 5_folklore_crossvalidation.py       # Experimento B (cross-validation)
+├── 6_model_comparison.py               # SVM vs Red Neuronal (11 clases)
 ├── my_features.csv                     # Features de GTZAN (generado)
+├── my_features_combined.csv            # GTZAN + folklore (generado)
 ├── folklore_features.csv               # Features de folklore (cache)
 ├── Makefile                            # Automatización
 ├── requirements.txt                    # Dependencias
@@ -224,7 +221,7 @@ Cada canción (30 segundos) se convierte en un vector de 45 números:
 
 - **Train/Test split:** 80/20 estratificado
 - **Normalización:** StandardScaler (media=0, std=1)
-- **Cross-validation:** Leave-One-Out para folklore
+- **Cross-validation:** 5-fold sobre el folklore (cada canción se evalúa una vez sobre un modelo que no la vio)
 
 ---
 

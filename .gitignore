@@ -19,7 +19,9 @@ docs/*.toc
 models/
 
 # CNN descartada: tampoco versionar sus imágenes de resultados
-results/cnn_confusion_matrix.png
-results/cnn_training_history.png
 opencode.sh
 output.txt
+results/
+
+## CSV generados
+*.csv

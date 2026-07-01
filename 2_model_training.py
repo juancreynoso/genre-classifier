@@ -20,7 +20,6 @@ print("ENTRENAMIENTO CON SVM")
 df = pd.read_csv('my_features.csv')
 print(f"\nDataset cargado: {df.shape[0]} muestras, {df.shape[1]} columnas")
 
-
 # PREPARAR DATOS
 X = df.drop(['filename', 'genre'], axis=1).values
 y = df['genre'].values

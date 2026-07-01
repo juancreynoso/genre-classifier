@@ -8,53 +8,42 @@ from sklearn.metrics import accuracy_score
 from sklearn.svm import SVC
 import pickle
 
-from features import load_folklore_features
-
 print("="*60)
 print("EXPERIMENTO B: PREDICCION DE FOLKLORE CON ENTRENAMIENTO")
 print("="*60)
 
-
-# LOAD GTZAN
-df_gtzan = pd.read_csv('my_features.csv')
-print(f"\nGTZAN cargado: {len(df_gtzan)} muestras")
-
-
-# PROCESAR FOLKLORE (features desde cache; se extraen una sola vez)
-df_folklore = load_folklore_features()
-print(f"Folklore procesado: {len(df_folklore)} muestras")
-
+# LOAD GTZAN + FOLKLORE
+df_combined = pd.read_csv('my_features_combined.csv')
+print(f"\nGTZAN + FOLKLORE cargado: {len(df_combined)} muestras")
 
 # SPLIT DE FOLKLORE
+df_folklore = df_combined[df_combined['genre'] == 'folklore'].sample(frac=1, random_state=42).reset_index(drop=True)
+
 if len(df_folklore) < 2:
     print("\nError: Se necesitan al menos 2 canciones de folklore")
     exit()
 
-# SHUFFLE folklore
-df_folklore_shuffled = df_folklore.sample(frac=1, random_state=None).reset_index(drop=True)
-
-# Elegir 1 cancion random para test
-df_folklore_test = df_folklore_shuffled.iloc[:1].copy()
-df_folklore_train = df_folklore_shuffled.iloc[1:].copy()
+# Copia una cancion de test del dataset folklore
+df_folklore_test = df_folklore.iloc[:1].copy()
 
 print(f"\nSplit de folklore (RANDOM):")
-print(f"  Train: {len(df_folklore_train)} canciones")
+print(f"  Train: {len(df_folklore) - 1} canciones")
 print(f"  Test:  1 cancion")
 print(f"  Cancion de test: {df_folklore_test['filename'].values[0]}")
 
-# COMBINAR GTZAN + FOLKLORE
-df_combined = pd.concat([df_gtzan, df_folklore_train], ignore_index=True)
-print(f"\nDataset combinado: {len(df_combined)} muestras")
-print(f"Generos: {df_combined['genre'].nunique()}")
-print("\nDistribucion:")
-print(df_combined['genre'].value_counts().sort_index())
+# DATASET DE ENTRENAMIENTO: todo menos la cancion de test
+df_train = df_combined[df_combined['filename'] != df_folklore_test['filename'].values[0]]
 
+print(f"\nDataset de entrenamiento: {len(df_train)} muestras")
+print(f"Generos: {df_train['genre'].nunique()}")
+print("\nDistribucion:")
+print(df_train['genre'].value_counts().sort_index())
 
 # ENTRENAR CON 11 GENEROS
 print("\nENTRENAMIENTO CON FOLKLORE INCLUIDO")
 
-X = df_combined.drop(['filename', 'genre'], axis=1).values
-y = df_combined['genre'].values
+X = df_train.drop(['filename', 'genre'], axis=1).values
+y = df_train['genre'].values
 
 label_encoder = LabelEncoder()
 y_encoded = label_encoder.fit_transform(y)
@@ -72,7 +61,7 @@ X_test_gtzan_scaled = scaler.transform(X_test_gtzan)
 print(f"\nTrain: {len(X_train)} muestras")
 print(f"Test: {len(X_test_gtzan)} muestras")
 
-print("\nEntrenando SVM con 10 generos y Folklore...")
+print("\nEntrenando SVM con 11 generos (GTZAN + Folklore)...")
 model = SVC(kernel='rbf', random_state=42, probability=True)
 model.fit(X_train_scaled, y_train)
 
@@ -80,7 +69,6 @@ y_pred = model.predict(X_test_gtzan_scaled)
 accuracy = accuracy_score(y_test_gtzan, y_pred)
 
 print(f"Accuracy en el entrenamiento: {accuracy:.2%}")
-
 
 # PRUEBA CON CANCION
 print("\nPREDICCION CON CANCION DE FOLKLORE NO ENTRENADA")
